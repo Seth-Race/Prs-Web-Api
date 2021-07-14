@@ -25,7 +25,8 @@ namespace Prs_Web_Api.Controllers
         [HttpGet]
         public async Task<ActionResult<IEnumerable<LineItem>>> GetLineItem()
         {
-            return await _context.LineItem.ToListAsync();
+            return await _context.LineItem.Include(x => x.Product).
+                Include(y => y.Request).ToListAsync();
         }
 
         // GET: api/LineItems/5
@@ -70,6 +71,7 @@ namespace Prs_Web_Api.Controllers
                 }
             }
 
+            await RecalculateTotal(lineItem.RequestId);
             return NoContent();
         }
 
@@ -104,5 +106,18 @@ namespace Prs_Web_Api.Controllers
         {
             return _context.LineItem.Any(e => e.Id == id);
         }
+
+        public async Task RecalculateTotal(int requestID) {
+            var request = await _context.Request.FindAsync(requestID);
+            request.Total = (from l in _context.LineItem
+                             join p in _context.Product on l.ProductId equals p.Id
+                             where l.RequestId == requestID
+                             select new { Total = l.Quantity * p.Price })
+                             .Sum(x => x.Total);
+            var rc = await _context.SaveChangesAsync();
+            if (rc != 1) throw new Exception("Fatal Error: Did not calculate.");
+
+        }
+
     }
 }

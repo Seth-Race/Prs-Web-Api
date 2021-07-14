@@ -42,8 +42,37 @@ namespace Prs_Web_Api.Controllers
             return request;
         }
 
+        //GET: api/list-review/{id}
+        [HttpGet("list-review/{id}")]
+        public async Task<ActionResult<IEnumerable<Request>>> GetRequestsByStatus(int id) {
+            var status = _context.Request.Where(s => s.Status == "Review" && s.Id != id).ToListAsync();
+            return await status;
+        }
+
+        //api/Approve
+        [HttpPut("approve")]
+        public async Task<IActionResult> RequestApprove(Request request) {
+            request.Status = "Approved";
+            return await PutRequest(request.Id, request);
+        }
+
+        //api/Reject
+        [HttpPut("reject")]
+        public async Task<IActionResult> RequestRejected(Request request) {
+            request.Status = "Rejected";
+            return await PutRequest(request.Id, request);
+        }
+
+        //Put {/submit review}
+        [HttpPut("/submit-review")]
+        public async Task<IActionResult> SubmitReview(int id, Request request) {
+            request.Status = request.Total <= 50 ? "Approved" : "Review";
+            return await PutRequest(id, request);
+
+        }
+
         // PUT: api/Requests/5
-        
+
         [HttpPut("{id}")]
         public async Task<IActionResult> PutRequest(int id, Request request)
         {
